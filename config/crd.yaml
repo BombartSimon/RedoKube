@@ -41,6 +41,10 @@ spec:
                 version:
                   type: string
                   description: "Version of the API documentation"
+                mock:
+                  type: boolean
+                  description: "When enabled, generates fake examples for the OpenAPI specification"
+                  default: false
                 theme:
                   type: object
                   additionalProperties:

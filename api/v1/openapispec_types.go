@@ -24,6 +24,10 @@ type OpenAPISpecSpec struct {
 	// Version of the API documentation
 	Version string `json:"version,omitempty"`
 
+	// When enabled, generates fake examples for the OpenAPI specification
+	// +optional
+	Mock bool `json:"mock,omitempty"`
+
 	// Theme customization options for Redoc
 	Theme map[string]string `json:"theme,omitempty"`
 }
@@ -72,6 +76,7 @@ func (in *OpenAPISpec) DeepCopyInto(out *OpenAPISpec) {
 		SpecContent: in.Spec.SpecContent,
 		Description: in.Spec.Description,
 		Version:     in.Spec.Version,
+		Mock:        in.Spec.Mock,
 	}
 
 	if in.Spec.Theme != nil {

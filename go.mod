@@ -3,8 +3,10 @@ module github.com/BombartSimon/redokube
 go 1.24.1
 
 require (
+	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/go-openapi/loads v0.22.0
 	github.com/gorilla/mux v1.8.1
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.32.3
 	k8s.io/client-go v0.32.3
 	k8s.io/klog/v2 v2.130.1

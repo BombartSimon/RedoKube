@@ -15,6 +15,7 @@ import (
 	"k8s.io/klog/v2"
 
 	docsv1 "github.com/BombartSimon/redokube/api/v1"
+	"github.com/BombartSimon/redokube/pkg/mockers"
 )
 
 const (
@@ -136,6 +137,7 @@ func (s *Server) RegisterSpec(openAPISpec *docsv1.OpenAPISpec) (string, error) {
 	name := fmt.Sprintf("%s-%s", openAPISpec.Namespace, openAPISpec.Name)
 	specPath := openAPISpec.Spec.SpecPath
 	specContent := openAPISpec.Spec.SpecContent
+	isMockEnabled := openAPISpec.Spec.Mock
 
 	// Create spec filename
 	specFilename := fmt.Sprintf("%s.json", name)
@@ -144,6 +146,18 @@ func (s *Server) RegisterSpec(openAPISpec *docsv1.OpenAPISpec) (string, error) {
 	// Check if we have direct content or need to fetch from path
 	if specContent != "" {
 		klog.Infof("Using direct OpenAPI spec content for %s", name)
+
+		// Apply mocking if enabled
+		if isMockEnabled {
+			klog.Infof("Mock is enabled for %s, generating fake examples", name)
+			mockedContent, err := mockers.MockOpenAPISpec(specContent)
+			if err != nil {
+				klog.Warningf("Failed to generate mock data: %v. Using original content.", err)
+			} else {
+				specContent = mockedContent
+				klog.Info("Successfully generated mock examples")
+			}
+		}
 
 		// Create the spec file
 		specFile, err := os.Create(specFilePath)
@@ -171,6 +185,24 @@ func (s *Server) RegisterSpec(openAPISpec *docsv1.OpenAPISpec) (string, error) {
 				return "", fmt.Errorf("failed to download OpenAPI spec from URL %s: status code %d", specPath, resp.StatusCode)
 			}
 
+			// Read the content for potential mocking
+			content, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return "", fmt.Errorf("failed to read spec content: %v", err)
+			}
+
+			// Apply mocking if enabled
+			if isMockEnabled {
+				klog.Infof("Mock is enabled for %s, generating fake examples", name)
+				mockedContent, err := mockers.MockOpenAPISpec(string(content))
+				if err != nil {
+					klog.Warningf("Failed to generate mock data: %v. Using original content.", err)
+				} else {
+					content = []byte(mockedContent)
+					klog.Info("Successfully generated mock examples")
+				}
+			}
+
 			// Create the spec file
 			specFile, err := os.Create(specFilePath)
 			if err != nil {
@@ -178,18 +210,36 @@ func (s *Server) RegisterSpec(openAPISpec *docsv1.OpenAPISpec) (string, error) {
 			}
 			defer specFile.Close()
 
-			// Copy the content directly without parsing/modifying it
-			_, err = io.Copy(specFile, resp.Body)
+			// Write the content to file
+			_, err = specFile.Write(content)
 			if err != nil {
 				return "", fmt.Errorf("failed to write spec to file: %v", err)
 			}
 		} else {
-			// For local files, copy directly if possible
+			// For local files, read content for potential mocking
 			sourceFile, err := os.Open(specPath)
 			if err != nil {
 				return "", fmt.Errorf("failed to open OpenAPI spec file %s: %v", specPath, err)
 			}
-			defer sourceFile.Close()
+
+			content, err := io.ReadAll(sourceFile)
+			sourceFile.Close() // Close after reading
+
+			if err != nil {
+				return "", fmt.Errorf("failed to read spec content: %v", err)
+			}
+
+			// Apply mocking if enabled
+			if isMockEnabled {
+				klog.Infof("Mock is enabled for %s, generating fake examples", name)
+				mockedContent, err := mockers.MockOpenAPISpec(string(content))
+				if err != nil {
+					klog.Warningf("Failed to generate mock data: %v. Using original content.", err)
+				} else {
+					content = []byte(mockedContent)
+					klog.Info("Successfully generated mock examples")
+				}
+			}
 
 			// Create the spec file
 			specFile, err := os.Create(specFilePath)
@@ -198,10 +248,10 @@ func (s *Server) RegisterSpec(openAPISpec *docsv1.OpenAPISpec) (string, error) {
 			}
 			defer specFile.Close()
 
-			// Copy the content directly
-			_, err = io.Copy(specFile, sourceFile)
+			// Write the content to file
+			_, err = specFile.Write(content)
 			if err != nil {
-				return "", fmt.Errorf("failed to copy spec to file: %v", err)
+				return "", fmt.Errorf("failed to write spec to file: %v", err)
 			}
 		}
 	} else {
