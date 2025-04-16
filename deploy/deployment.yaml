@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redokube
+  labels:
+    app: redokube
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redokube
+  template:
+    metadata:
+      labels:
+        app: redokube
+    spec:
+      serviceAccountName: redokube
+      containers:
+        - name: redokube
+          image: ${REGISTRY}/redokube:${TAG}
+          args:
+            - "--metrics-bind-address=:8080"
+            - "--health-probe-bind-address=:8081"
+            - "--port=8082"
+            - "--external-url=$(EXTERNAL_URL)"
+            - "--spec-directory=/data/specs"
+          env:
+            - name: EXTERNAL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: redokube-config
+                  key: external_url
+                  optional: true
+          ports:
+            - containerPort: 8080
+              name: metrics
+            - containerPort: 8081
+              name: health
+            - containerPort: 8082
+              name: docs
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: spec-storage
+              mountPath: /data/specs
+      volumes:
+        - name: spec-storage
+          emptyDir: {}

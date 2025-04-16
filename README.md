@@ -51,7 +51,7 @@ make deploy
 Une fois l'opérateur déployé, vous pouvez créer des ressources OpenAPISpec pour afficher la documentation de vos APIs :
 
 ```yaml
-apiVersion: docs.openapi.io/v1
+apiVersion: docs.redokube.io/v1
 kind: OpenAPISpec
 metadata:
   name: ma-super-api
