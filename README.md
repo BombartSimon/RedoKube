@@ -2,6 +2,8 @@
 
 Un opérateur Kubernetes pour centraliser et afficher la documentation OpenAPI des APIs.
 
+![RedoKube](./doc/logo.png)
+
 ## Description
 
 L'OpenAPI Operator est un opérateur Kubernetes développé en Go qui permet de centraliser la documentation des APIs en format OpenAPI/Swagger et de les afficher via une interface Redoc. Cet opérateur scanne et gère des ressources personnalisées OpenAPISpec qui pointent vers des fichiers de spécification OpenAPI, et génère automatiquement une documentation interactive accessible depuis le navigateur.
